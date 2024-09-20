@@ -4,6 +4,12 @@ This project utilizes OpenCV's Trackers API to develop an automated tracking sys
 
 **An angle-time graph will be produced with average period, while logging X, Y, and angle to a csv file.** For each video there will be one csv file and one graph in the `ouput/` directory.
 
+> If by any chance this is used in academic research, plesae credit the repository and the creator.
+
+## Contact Me
+
+If you wish to contribute or have questions, reach out to [my email](jetjiang.ez@gmail.com). The project might not be actively maintained but I am happy to help if possible.
+
 ## Requirements
 
 OpenCV is originally a C computer vision library written in C++, but its Python API is much more convenient in development. You need to install the package in order to run this script.
