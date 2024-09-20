@@ -1,0 +1,3 @@
+this is the default dir for source video
+move your video file to this directory for processing
+please make sure this folder is not empty

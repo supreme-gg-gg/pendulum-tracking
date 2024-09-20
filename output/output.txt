@@ -1,0 +1,2 @@
+this is where images and csv files will be stored
+please make sure the folder exists otherwise will report error
