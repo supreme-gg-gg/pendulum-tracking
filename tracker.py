@@ -8,7 +8,7 @@ import os
 
 from plotting import plot_angle
 
-def process_video(tracker, video_path, csv_path):
+def process_video(tracker, video_path, csv_path, show):
 
     video = cv2.VideoCapture(video_path)
 
@@ -60,7 +60,10 @@ def process_video(tracker, video_path, csv_path):
     ok = tracker.init(frame, bounding_box)
 
     position_log = []
-    start_time = time.time()
+    # start_time = time.time()
+
+    # Get the recorded fps (frames per second) from the video
+    recorded_fps = video.get(cv2.CAP_PROP_FPS)
 
     # This is a temporary solution to a issue caused by arctan
     def normalize_angle(a):
@@ -73,6 +76,7 @@ def process_video(tracker, video_path, csv_path):
         return a
     
     adj_x, adj_y, angle = 0, 0, 0
+    current_frame = 0
 
     while True:
 
@@ -80,11 +84,15 @@ def process_video(tracker, video_path, csv_path):
         if not ok:
             break
             
+        # Obtain frame per second (deprecated)
         timer = cv2.getTickCount()
-        ok, bbox = tracker.update(frame)
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
-        current_time = time.time() - start_time
 
+        ok, bbox = tracker.update(frame)
+
+        # Calculate the real-life timestamp of this frame
+        current_time = (current_frame / recorded_fps)
+        
         if ok:
 
             x, y, w, h = map(int, bbox)
@@ -101,26 +109,32 @@ def process_video(tracker, video_path, csv_path):
             adj_y = origin[0] - center_y
 
             angle = math.degrees(math.atan(adj_y/adj_x)) if adj_x != 0 else 0
+            # angle = math.atan(adj_y/adj_x) if adj_x != 0 else 0
             angle = normalize_angle(angle)
+            
+            if current_frame % 5 == 0:
+                position_log.append([round(current_time, 3), adj_x, adj_y, round(angle, 3)])
 
-            position_log.append([round(current_time, 3), adj_x, adj_y, round(angle, 3)])
-
-        else : 
+        elif show: 
 
             cv2.putText(frame, "Tracking failure detected", (100,140), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,255),2)
 
-        # Display information on screen
-        cv2.putText(frame, f"X: {adj_x:.2f}, Y:{adj_y:.2f}, Angle:{angle:.2f}", (100,60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
-        cv2.putText(frame, "FPS : " + str(int(fps)), (100,100), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50), 2)
+        if show:
+        
+            # Display information on screen
+            cv2.putText(frame, f"Time: {current_time}, X: {adj_x:.2f}, Y:{adj_y:.2f}, Angle:{angle:.2f}", (100,60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
+            cv2.putText(frame, "FPS : " + str(int(fps)), (100,100), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50), 2)
 
-        # Display result
-        cv2.namedWindow("Tracking", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("Tracking", min(frame_width, 800), min(frame_height, 600))  # Limit window size
-        cv2.imshow("Tracking", frame)
+            # Display result
+            cv2.namedWindow("Tracking", cv2.WINDOW_NORMAL)
+            cv2.resizeWindow("Tracking", min(frame_width, 800), min(frame_height, 600))  # Limit window size
+            cv2.imshow("Tracking", frame)
 
-        # Exit if ESC pressed
-        k = cv2.waitKey(1) & 0xff
-        if k == 27 : break
+            # Exit if ESC pressed
+            k = cv2.waitKey(1) & 0xff
+            if k == 27 : break
+
+        current_frame += 1
 
     # Release resources
     video.release()
@@ -134,7 +148,7 @@ def process_video(tracker, video_path, csv_path):
     plot_angle(from_df=df, output_path=png_path)
     print(f"Plot saved to {png_path}")
 
-def process_directory(tracker, directory):
+def process_directory(tracker, directory, show):
     # Get a list of all files in the directory
     video_files = [f for f in os.listdir(directory) if f.endswith(('.MOV', '.mp4', '.avi', '.mkv'))]
 
@@ -150,7 +164,7 @@ def process_directory(tracker, directory):
         output_csv_path = os.path.join("./output", f"{os.path.splitext(video_file)[0]}_output.csv")
 
         # Call the video processing function
-        process_video(tracker, video_path, output_csv_path)
+        process_video(tracker, video_path, output_csv_path, show)
 
     print(f"Processed {len(video_files)} video files in directory: {directory}")
 
@@ -168,7 +182,14 @@ if __name__ == "__main__":
         '--source',
         type=str,
         default="videos",
-        help='Source directory (a string).'
+        help='Source directory path as string.'
+    )
+
+    parser.add_argument(
+        '--show',
+        type=str,
+        default='True',
+        help="Show the tracking in progress?"
     )
 
     args = parser.parse_args()
@@ -187,9 +208,11 @@ if __name__ == "__main__":
     }
 
     tracker = trackers[args.tracker]()
+    show_video = True if args.show == "True" else False
 
     print(f"Using tracker: {args.tracker}")
     print(f"Operating on source directory: {args.source}")
+    print(f"Showing video is {show_video}.")
 
-    process_directory(tracker, args.source)
+    process_directory(tracker, args.source, show_video)
 

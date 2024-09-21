@@ -8,6 +8,12 @@ This project utilizes OpenCV's Trackers API to develop an automated tracking sys
 
 > The code is open source and feel free to fork and use it for your project. However, please credit the creator if the code was used as a part of any academic assignment.
 
+## Input Requirements
+
+It is very important to note that input video are intended to be at _**60fps**_. Technically it would work for all other framerates (30 or 240) but this could cause unexpected errors or a wrong time scale.
+
+> NOTE: This might be fixed in future patches. Please create a GitHub Issue if you run into difficulties.
+
 ## Contact Me
 
 If you wish to contribute or have questions, reach out to [my email](jetjiang.ez@gmail.com). The project might not be actively maintained but I am happy to help if possible.
@@ -33,10 +39,12 @@ conda env create -f environment.yaml
 The following script will process all the files in the specified directory:
 
 ```
-python3 tracker.py --tracker <tracker_type> --source <path-to-videos>
+python3 tracker.py --tracker <tracker_type> --source <path-to-videos> --show <True/False>
 ```
 
 The tracker is defaulted to `KCF` (Kernalized Correlation Filter). All available options for OpenCV 4.0+ are: `tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']`.
+
+> If you don't wish to show the video being tracked, set `--show` to `False`.
 
 The user will be prompted to:
 
@@ -64,13 +72,17 @@ Traceback (most recent call last):
 AttributeError: module 'cv2' has no attribute 'TrackerTLD'
 ```
 
-### Tracker Error
+### Slow-motion Videos
 
-It has come to our attention that for the first few seconds of certain video tracker failed to work properly. This caused missing data points at both ends. The best solution would be to truncate the inconsistent datapoints. **This will be implemented in future patches.**
+It has come to our attention that Apple devices record slow-mo video in a way that changes the frame rate from 30 to 240 fps after the first few seconds, which will cause the tracker to fail. **Please avoid using slow-motion video, or this issue might be address in upcoming patches.**
 
-### Failing to Track
+### Tracking Instability
 
-If you have a video with too high frame rate (e.g. 240fps), it is likely that the tracker can fail. Our performance benchmark was tested on 30-60 fps, you should investigate the issue yourself or try to reduce the frame rate as a precaution.
+In the case of failing to track recurrently, consider using a different tracker than the default `KCF`. You can research the different features of each tracker but trial and error should lead to the solution for most use cases.
+
+### Inaccurate Period
+
+In certain testing scenarios the average period calculated is incorrect. _The issue is currently being investigated and will hopefully be addressed in a future patch._ Please double-check the reasonableness of the output since the program CAN make mistakes!
 
 ## TODO
 
