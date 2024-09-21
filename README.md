@@ -5,6 +5,7 @@ This project utilizes OpenCV's Trackers API to develop an automated tracking sys
 **An angle-time graph will be produced with average period, while logging X, Y, and angle to a csv file.** For each video there will be one csv file and one graph in the `ouput/` directory.
 
 ![Sample graph](angle-time-sample.png)
+![Another sample graph](output/IMG_2540_output.png)
 
 > The code is open source and feel free to fork and use it for your project. However, please credit the creator if the code was used as a part of any academic assignment.
 
