@@ -4,6 +4,22 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 import argparse
+import math
+
+def calculate_periods(peaks, times):
+        periods = []
+        for i in range(1, len(peaks)):
+            period = times[peaks[i]] - times[peaks[i - 1]]
+            periods.append(period)
+        
+        try:
+            average_period = sum(periods) / len(periods)
+            return average_period
+        except ZeroDivisionError:
+            print("No period recorded, error plotting")
+            return 0
+
+
 
 def plot_angle(df, output_path="angle_graph.png"):
 
@@ -18,20 +34,8 @@ def plot_angle(df, output_path="angle_graph.png"):
     peaks, _ = find_peaks(angles)
 
     # Calculate periods
-    def calculate_periods(peaks, times):
-        periods = []
-        for i in range(1, len(peaks)):
-            period = times[peaks[i]] - times[peaks[i - 1]]
-            periods.append(period)
-        return periods
 
-    periods = calculate_periods(peaks, times)
-    
-    try:
-        average_period = sum(periods) / len(periods)
-    except ZeroDivisionError:
-        print("No period recorded, error plotting")
-        return
+    average_period = calculate_periods(peaks, times)
 
     # Plot Angle vs Time
     plt.figure(figsize=(10, 6))
@@ -66,12 +70,19 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     # Generate the fitted curve
     fitted_peak_heights = exponential_decay(peak_times, fitted_A, fitted_gamma)
 
+    # Find tau & Q factor
+    tau = 1 / fitted_gamma # Calculations see README.md
+    average_period = calculate_periods(peaks, times)
+    q_factor = math.pi * tau / average_period
+
     # Plots the 
     plt.figure(figsize=(10, 6))
     plt.plot(times, angles, label='Damped Oscillator', color='blue')
     plt.plot(peak_times, peak_amplitudes, 'ro', label='Peaks')
     plt.plot(peak_times, fitted_peak_heights, 'g--', label=f'Fitted: {fitted_A:.3f}*exp(-{fitted_gamma:.3f}*t)')
 
+    plt.suptitle(f"Tau: {tau:.3f} seconds, T: {average_period:.3f}, Q factor: {q_factor:.3f}")
+    
     plt.title("Amplitude vs Time")
     plt.xlabel("Time (s)")
     plt.ylabel("Amplitude (degrees)")

@@ -1,12 +1,11 @@
 import cv2
 import sys
 import pandas as pd
-import time
 import math
 import argparse
 import os
 
-from plotting import plot_angle
+from plotting import plot_angle, fit_amplitude
 
 def process_video(tracker, video_path, csv_path, show):
 
@@ -122,9 +121,9 @@ def process_video(tracker, video_path, csv_path, show):
         if show:
         
             # Display information on screen
-            cv2.putText(frame, f"Time: {current_time}, X: {adj_x:.2f}, Y:{adj_y:.2f}, Angle:{angle:.2f}", (100,60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
-            cv2.putText(frame, "FPS : " + str(int(fps)), (100,100), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50), 2)
-
+            cv2.putText(frame, f"Time: {current_time:.2f}, X: {adj_x:.2f}, Y:{adj_y:.2f}", (100,60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
+            cv2.putText(frame, f"Angle:{angle:.2f}", (100,100), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
+            
             # Display result
             cv2.namedWindow("Tracking", cv2.WINDOW_NORMAL)
             cv2.resizeWindow("Tracking", min(frame_width, 800), min(frame_height, 600))  # Limit window size
@@ -145,12 +144,14 @@ def process_video(tracker, video_path, csv_path, show):
     print(f"Position data saved to {csv_path}")
 
     png_path = os.path.splitext(csv_path)[0] + '.png'
-    plot_angle(from_df=df, output_path=png_path)
-    print(f"Plot saved to {png_path}")
+    # plot_angle(df, output_path=png_path)
+    fit_amplitude(df, output_path=png_path)
+    # print(f"Plot saved to {png_path}")
+    print(f"Amplitude plot saved to {png_path}") 
 
 def process_directory(tracker, directory, show):
     # Get a list of all files in the directory
-    video_files = [f for f in os.listdir(directory) if f.endswith(('.MOV', '.mp4', '.avi', '.mkv'))]
+    video_files = [f for f in os.listdir(directory) if f.endswith(('.mov', '.MOV', '.mp4', '.avi', '.mkv'))]
 
     if not video_files:
         print("No video files found in the directory.")
@@ -215,4 +216,3 @@ if __name__ == "__main__":
     print(f"Showing video is {show_video}.")
 
     process_directory(tracker, args.source, show_video)
-
