@@ -2,17 +2,15 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
+from scipy.optimize import curve_fit
+import argparse
 
-def plot_angle(from_df=None, csv_src="positions.csv", output_path="angle_time.png"):
+def plot_angle(df, output_path="angle_graph.png"):
 
     """
-    By default we assume this function is used to plot a graph by reading from an existing csv. 
-    When called from tracker automatically, it will use the df provided.
+    The driver function will read the csv or otherwise provide the angles and times arrays.
     """
 
-    df = pd.read_csv(csv_src, header=0) if from_df is None else from_df
-
-    # Find peaks (for period calculation)
     angles = df["Angle(deg)"].values
     times = df["Time(s)"].values
 
@@ -28,7 +26,7 @@ def plot_angle(from_df=None, csv_src="positions.csv", output_path="angle_time.pn
         return periods
 
     periods = calculate_periods(peaks, times)
-    # print(periods) # TODO: Some periods are not correct judging from the output...
+    
     try:
         average_period = sum(periods) / len(periods)
     except ZeroDivisionError:
@@ -46,5 +44,49 @@ def plot_angle(from_df=None, csv_src="positions.csv", output_path="angle_time.pn
     plt.savefig(f"{output_path}", format="png")
     plt.show()
 
+def fit_amplitude(df, output_path="amplitude_decay.png"):
+
+    angles = df["Angle(deg)"]
+    times = df["Time(s)"]
+
+    peaks, _ = find_peaks(angles)
+    peak_times = times[peaks]
+    peak_amplitudes = angles[peaks]
+
+    # Fit the peak heights to an exponential function A * exp(-gamma * t)
+    def exponential_decay(t, A, gamma):
+        return A * np.exp(-gamma * t)
+
+    # Perform curve fitting to the peak data
+    popt, _ = curve_fit(exponential_decay, peak_times, peak_amplitudes)
+
+    # Fitted parameters
+    fitted_A, fitted_gamma = popt
+
+    # Generate the fitted curve
+    fitted_peak_heights = exponential_decay(peak_times, fitted_A, fitted_gamma)
+
+    # Plots the 
+    plt.figure(figsize=(10, 6))
+    plt.plot(times, angles, label='Damped Oscillator', color='blue')
+    plt.plot(peak_times, peak_amplitudes, 'ro', label='Peaks')
+    plt.plot(peak_times, fitted_peak_heights, 'g--', label=f'Fitted: {fitted_A:.3f}*exp(-{fitted_gamma:.3f}*t)')
+
+    plt.title("Amplitude vs Time")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude (degrees)")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(f"{output_path}", format="png")
+    plt.show()
+
 if __name__ == "__main__":
-    plot_angle()
+    
+    parser = argparse.ArgumentParser(description="Plot pendulum angle from CSV data.")
+    parser.add_argument("--path", type=str, default="positions.csv", help="Path to the CSV file containing the data.")
+    args = parser.parse_args()
+
+    # If called from main you must specify a CSV file path
+    df = pd.read_csv(args.path, header=0)
+    
+    fit_amplitude(df)
