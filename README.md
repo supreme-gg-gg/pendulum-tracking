@@ -17,7 +17,7 @@ The program works best with videos recorded at _**60fps**_. Most modern smartpho
 
 ## Contact Me
 
-If you wish to contribute or have questions, reach out to [my email](mailto:jetjiang.ez@gmail.com). The project might not be actively maintained over the year but I am happy to help if possible.
+If you wish to contribute or have questions, reach out to Jet Chiang at [my email](mailto:jetjiang.ez@gmail.com). The project might not be actively maintained over the year but I am happy to help if possible.
 
 ## Usage
 
