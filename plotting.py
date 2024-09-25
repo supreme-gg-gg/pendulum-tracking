@@ -19,8 +19,6 @@ def calculate_periods(peaks, times):
             print("No period recorded, error plotting")
             return 0
 
-
-
 def plot_angle(df, output_path="angle_graph.png"):
 
     """
@@ -45,7 +43,7 @@ def plot_angle(df, output_path="angle_graph.png"):
     plt.xlabel("Time (s)")
     plt.ylabel("Angle (degrees)")
     plt.grid(True)
-    plt.savefig(f"{output_path}", format="png")
+    plt.savefig(f"output/{output_path}", format="png")
     plt.show()
 
 def fit_amplitude(df, output_path="amplitude_decay.png"):
@@ -88,7 +86,7 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     plt.ylabel("Amplitude (degrees)")
     plt.grid(True)
     plt.legend()
-    plt.savefig(f"{output_path}", format="png")
+    plt.savefig(f"output/{output_path}", format="png")
     plt.show()
 
 if __name__ == "__main__":
