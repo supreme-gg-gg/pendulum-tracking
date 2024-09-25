@@ -2,12 +2,12 @@
 
 This project utilizes OpenCV's Trackers API to develop an automated tracking system for processing recorded videos of pendulum motion. You should put all the video you wish to process in one directory and the program will automatically process all the files.
 
+> The code is open source and feel free to fork and use it for your project. However, you must credit the creator if the code was used as a part of any academic assignment. Consider giving me a star for the repo too xd
+
 **An angle-time graph will be produced with average period, while logging X, Y, and angle to a csv file. For an entire list of supported graphs, please see [the graphs section](#supported-graphs)** For each video there will be one csv file and one or more graph in the `ouput/` directory.
 
 ![Sample graph](angle-time.png)
 ![Sample for curve fitting](amplitude_decay.png)
-
-> The code is open source and feel free to fork and use it for your project. However, you must credit the creator if the code was used as a part of any academic assignment.
 
 ## Input Requirements
 
