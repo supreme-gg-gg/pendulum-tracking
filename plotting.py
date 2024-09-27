@@ -55,6 +55,9 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     peak_times = times[peaks]
     peak_amplitudes = angles[peaks]
 
+    error = 0.5 * np.ones_like(peak_times)
+    xerr = 0.5 * np.ones_like(peak_times)
+
     # Fit the peak heights to an exponential function A * exp(-gamma * t)
     def exponential_decay(t, A, gamma):
         return A * np.exp(-gamma * t)
@@ -67,25 +70,37 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
 
     # Generate the fitted curve
     fitted_peak_heights = exponential_decay(peak_times, fitted_A, fitted_gamma)
+    
+    residual = peak_amplitudes - fitted_peak_heights
 
     # Find tau & Q factor
     tau = 1 / fitted_gamma # Calculations see README.md
     average_period = calculate_periods(peaks, times)
     q_factor = math.pi * tau / average_period
 
-    # Plots the 
-    plt.figure(figsize=(10, 6))
-    plt.plot(times, angles, label='Damped Oscillator', color='blue')
-    plt.plot(peak_times, peak_amplitudes, 'ro', label='Peaks')
-    plt.plot(peak_times, fitted_peak_heights, 'g--', label=f'Fitted: {fitted_A:.3f}*exp(-{fitted_gamma:.3f}*t)')
+    plt.figure(figsize=(10, 7))  # Decrease figure height for shorter plots
 
+    plt.subplot(2, 1, 1)
+    plt.plot(times, angles, label='Damped Oscillator', color='blue')
+    plt.errorbar(peak_times, peak_amplitudes, fmt='ro', yerr=error, label='Peaks')
+    plt.plot(peak_times, fitted_peak_heights, 'g--', label=f'Fitted: {fitted_A:.3f}*exp(-{fitted_gamma:.3f}*t)')
     plt.suptitle(f"Tau: {tau:.3f} seconds, T: {average_period:.3f}, Q factor: {q_factor:.3f}")
-    
     plt.title("Amplitude vs Time")
     plt.xlabel("Time (s)")
     plt.ylabel("Amplitude (degrees)")
     plt.grid(True)
     plt.legend()
+
+    plt.subplot(2, 1, 2)
+    # Plot the residuals
+    plt.errorbar(peak_times, residual, yerr=error, fmt='o', label='Residuals')
+    plt.axhline(0, color='gray', linestyle='--')
+    plt.xlabel('Time')
+    plt.ylabel('Residuals')
+    plt.title('Residuals of the Exponential Fit')
+    plt.legend()
+
+    plt.tight_layout(pad=2.0)  # Add padding between plots
     plt.savefig(f"output/{output_path}", format="png")
     plt.show()
 
@@ -99,3 +114,4 @@ if __name__ == "__main__":
     df = pd.read_csv(args.path, header=0)
     
     fit_amplitude(df)
+    # plot_angle(df)
