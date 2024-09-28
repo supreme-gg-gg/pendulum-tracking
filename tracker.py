@@ -5,9 +5,14 @@ import math
 import argparse
 import os
 
-from plotting import plot_angle, fit_amplitude
+from plotting import plot_angle, fit_amplitude, binning, amplitude_decay
 
-def process_video(tracker, video_path, csv_path, show):
+def process_video(tracker, video_path, csv_path, ret=False):
+
+    '''
+    Please specify ret = True if you want to return a df containing all
+    the results of the videos. In most cases we use ret = False.
+    '''
 
     video = cv2.VideoCapture(video_path)
 
@@ -27,8 +32,8 @@ def process_video(tracker, video_path, csv_path, show):
             print(f"Equilibrium Point {origin} set at: X = {x}, Y = {y}")
             origin = (x, y)
 
-    ret, frame = video.read()
-    if not ret:
+    ok, frame = video.read()
+    if not ok:
         print('Cannot read video file')
         sys.exit()
 
@@ -114,11 +119,7 @@ def process_video(tracker, video_path, csv_path, show):
             if current_frame % 5 == 0:
                 position_log.append([round(current_time, 3), adj_x, adj_y, round(angle, 3)])
 
-        elif show: 
-
             cv2.putText(frame, "Tracking failure detected", (100,140), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,255),2)
-
-        if show:
         
             # Display information on screen
             cv2.putText(frame, f"Time: {current_time:.2f}, X: {adj_x:.2f}, Y:{adj_y:.2f}", (100,60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
@@ -145,13 +146,23 @@ def process_video(tracker, video_path, csv_path, show):
 
     png_path = os.path.splitext(csv_path)[0] + '.png'
     # plot_angle(df, output_path=png_path)
-    fit_amplitude(df, output_path=png_path)
+    if ret:
+        data = fit_amplitude(df, output_path=png_path, ret=True)
+    else:
+        fit_amplitude(df, output_path=png_path) 
     # print(f"Plot saved to {png_path}")
-    print(f"Amplitude plot saved to {png_path}") 
+    print(f"Amplitude plot saved to {png_path}")
 
-def process_directory(tracker, directory, show):
+    if ret:
+        return data, df["Time(s)"].iloc[-1]
+
+def process_directory(tracker, directory, ret=False):
     # Get a list of all files in the directory
     video_files = [f for f in os.listdir(directory) if f.endswith(('.mov', '.MOV', '.mp4', '.avi', '.mkv'))]
+
+    if ret:
+        trials = []
+        length = []
 
     if not video_files:
         print("No video files found in the directory.")
@@ -165,7 +176,16 @@ def process_directory(tracker, directory, show):
         output_csv_path = os.path.join("./output", f"{os.path.splitext(video_file)[0]}_output.csv")
 
         # Call the video processing function
-        process_video(tracker, video_path, output_csv_path, show)
+        if ret:
+            data, time = process_video(tracker, video_path, output_csv_path, ret)
+            trials.append(data)
+            length.append(time)
+        else:
+            process_video(tracker, video_path, output_csv_path)
+
+    if ret:
+        times, means, uncertainties = binning(trials, max_time=max(length))
+        amplitude_decay(times, means, uncertainties)
 
     print(f"Processed {len(video_files)} video files in directory: {directory}")
 
@@ -186,13 +206,6 @@ if __name__ == "__main__":
         help='Source directory path as string.'
     )
 
-    parser.add_argument(
-        '--show',
-        type=str,
-        default='True',
-        help="Show the tracking in progress?"
-    )
-
     args = parser.parse_args()
 
     if not os.path.isdir(args.source):
@@ -209,10 +222,9 @@ if __name__ == "__main__":
     }
 
     tracker = trackers[args.tracker]()
-    show_video = True if args.show == "True" else False
 
     print(f"Using tracker: {args.tracker}")
     print(f"Operating on source directory: {args.source}")
-    print(f"Showing video is {show_video}.")
 
-    process_directory(tracker, args.source, show_video)
+    # CURRENTLY we manually set return as true or false!
+    process_directory(tracker, args.source, ret=True)

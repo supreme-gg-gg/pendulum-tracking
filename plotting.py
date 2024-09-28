@@ -6,6 +6,52 @@ from scipy.optimize import curve_fit
 import argparse
 import math
 
+def binning(trials, max_time, bin_size=1):
+    bins = np.arange(0, max_time + bin_size, bin_size)
+
+    # Initialize lists to hold max amplitudes per trial
+    max_amplitudes_per_trial = []
+
+    # Find max amplitude for each trial
+    for trial in trials:
+        max_amplitude = []
+        for timestamp, amplitude in trial:
+            max_amplitude.append(amplitude)
+        max_amplitudes_per_trial.append(max(max_amplitude))
+
+    # Now bin the max amplitudes
+    mean_amplitudes = []
+    std_amplitudes = []
+
+    for start in bins[:-1]:
+        bin_amplitudes = []
+        for trial in trials:
+            for timestamp, amplitude in trial:
+                if start <= timestamp < start + bin_size:
+                    bin_amplitudes.append(amplitude)
+
+        if bin_amplitudes:
+            mean_amplitudes.append(np.mean(bin_amplitudes))
+            std_amplitudes.append(np.std(bin_amplitudes))
+        else:
+            mean_amplitudes.append(np.nan)
+            std_amplitudes.append(np.nan)
+
+    # Convert to numpy arrays for further use or plotting
+    mean_amplitudes = np.array(mean_amplitudes)
+    std_amplitudes = np.array(std_amplitudes)
+    
+    # Calculate uncertainty of the mean
+    uncertainty_mean = [std / np.sqrt(len(trials)) if len(trials) > 0 else np.nan for std in std_amplitudes]
+    
+    # Calculate bin centers for plotting
+    bin_centers = bins[:-1] + bin_size / 2
+
+    print(mean_amplitudes[:10])
+    print(uncertainty_mean[:10])
+
+    return bin_centers, mean_amplitudes, uncertainty_mean
+
 def calculate_periods(peaks, times):
         periods = []
         for i in range(1, len(peaks)):
@@ -46,7 +92,10 @@ def plot_angle(df, output_path="angle_graph.png"):
     plt.savefig(f"output/{output_path}", format="png")
     plt.show()
 
-def fit_amplitude(df, output_path="amplitude_decay.png"):
+def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png"):
+
+    # If ret is set to True, the amplitude over time df will be returned
+    # Provide your own error bars on x, y otherwise none
 
     angles = df["Angle(deg)"]
 
@@ -57,10 +106,9 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     peaks, _ = find_peaks(angles)
     peak_times = times[peaks]
     peak_amplitudes = angles[peaks]
-
-    error = 0.5 * np.ones_like(peak_times)
-    error = np.radians(error)
-    xerr = 0.5 * np.ones_like(peak_times)
+    
+    error = np.radians(0.5 * np.ones_like(peak_times)) if err == None else err
+    # xerr = 0.5 * np.ones_like(peak_times)
 
     # Fit the peak heights to an exponential function A * exp(-gamma * t)
     def exponential_decay(t, A, gamma):
@@ -105,8 +153,59 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     plt.legend()
 
     plt.tight_layout(pad=2.0)  # Add padding between plots
-    plt.savefig(f"output/{output_path}", format="png")
+    plt.savefig(f"{output_path}", format="png")
     plt.show()
+
+    if ret:
+        return list(zip(peak_times, peak_amplitudes))
+    
+def amplitude_decay(times, peaks, error, output_path="amplitude_decay_trials.png"):
+
+    def exponential_decay(t, A, gamma):
+        return A * np.exp(-gamma * t)
+
+    # Perform curve fitting to the peak data
+    popt, _ = curve_fit(exponential_decay, times, peaks)
+
+    # Fitted parameters
+    fitted_A, fitted_gamma = popt
+
+    # Generate the fitted curve
+    fitted_peak_heights = exponential_decay(times, fitted_A, fitted_gamma)
+    
+    residual = peaks - fitted_peak_heights
+
+    '''
+    # Find tau & Q factor
+    tau = 1 / fitted_gamma # Calculations see README.md
+    average_period = calculate_periods(peaks, times)
+    q_factor = math.pi * tau / average_period
+    '''
+    
+    plt.figure(figsize=(10, 6))  # Decrease figure height for shorter plots
+
+    plt.subplot(2, 1, 1)
+    plt.errorbar(times, peaks, fmt='ro', yerr=error, label='Peaks')
+    plt.plot(times, fitted_peak_heights, 'g--', label=f'Fitted: {fitted_A:.3f}*exp(-{fitted_gamma:.3f}*t)')
+    # plt.suptitle(f"Tau: {tau:.3f} seconds, T: {average_period:.3f}, Q factor: {q_factor:.3f}")
+    plt.title("Amplitude vs Time")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude (radians)")
+    plt.grid(True)
+    plt.legend()
+
+    plt.subplot(2, 1, 2)
+    # Plot the residuals
+    plt.errorbar(times, residual, yerr=error, fmt='o', label='Residuals')
+    plt.axhline(0, color='gray', linestyle='--')
+    plt.xlabel('Time')
+    plt.ylabel('Residuals')
+    plt.title('Residuals of the Exponential Fit')
+    plt.legend()
+
+    plt.tight_layout(pad=2.0)  # Add padding between plots
+    plt.savefig(f"{output_path}", format="png")
+    plt.show() 
 
 if __name__ == "__main__":
     
