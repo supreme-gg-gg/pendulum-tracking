@@ -8,11 +8,21 @@ import os
 from plotting import plot_angle, fit_amplitude, binning, amplitude_decay
 
 def process_video(tracker, video_path, csv_path, ret=False):
-
-    '''
-    Please specify ret = True if you want to return a df containing all
-    the results of the videos. In most cases we use ret = False.
-    '''
+    """
+    Process a video to track an object and log its position and angle over time.
+    Args:
+        tracker (cv2.Tracker): The OpenCV tracker object to use for tracking.
+        video_path (str): Path to the input video file.
+        csv_path (str): Path to save the CSV file containing the tracking results.
+        ret (bool, optional): If True, returns a list of list of tuples containing the results. Defaults False.
+    Returns:
+        tuple: If ret is True, returns a tuple containing the fitted amplitude data and the total time of the video.
+    Notes:
+    - The user is required to manually select an equilibrium point and the Region of Interest (ROI) in the first frame.
+    - The function logs the position and angle of the tracked object at regular intervals.
+    - The results are saved to a CSV file, and an amplitude plot is generated and saved as a PNG file.
+    - This function works closely with fit_amplitude and amplitude_decay
+    """
 
     video = cv2.VideoCapture(video_path)
 
@@ -147,22 +157,45 @@ def process_video(tracker, video_path, csv_path, ret=False):
     png_path = os.path.splitext(csv_path)[0] + '.png'
     # plot_angle(df, output_path=png_path)
     if ret:
-        data = fit_amplitude(df, output_path=png_path, ret=True)
+        data, q_factor = fit_amplitude(df, output_path=png_path, ret=True)
     else:
         fit_amplitude(df, output_path=png_path) 
     # print(f"Plot saved to {png_path}")
     print(f"Amplitude plot saved to {png_path}")
 
     if ret:
-        return data, df["Time(s)"].iloc[-1]
+        return data, df["Time(s)"].iloc[-1], q_factor
 
 def process_directory(tracker, directory, ret=False):
+    """
+    Processes all video files in a given directory using a specified tracker.
+    Args:
+        tracker: The tracking object or function used to process the videos.
+        directory (str): The path to the directory containing video files.
+        ret (bool, optional): If True, returns additional data for further processing. Defaults to False.
+    Returns:
+        None or tuple: If `ret` is True, returns a tuple containing:
+            - times (list): List of time bins.
+            - means (list): List of mean values for each bin.
+            - uncertainties (list): List of uncertainties for each bin.
+        Otherwise, returns None.
+    Raises:
+        FileNotFoundError: If the specified directory does not exist.
+        Exception: If an error occurs during video processing.
+    Notes:
+        - Supported video file formats are: .mov, .MOV, .mp4, .avi, .mkv.
+        - Processed video data is saved in the ./output directory with a corresponding CSV file.
+    Example:
+        process_directory(my_tracker, "/path/to/videos", ret=True)
+    """
+
     # Get a list of all files in the directory
     video_files = [f for f in os.listdir(directory) if f.endswith(('.mov', '.MOV', '.mp4', '.avi', '.mkv'))]
 
     if ret:
         trials = []
         length = []
+        q_facotrs = []
 
     if not video_files:
         print("No video files found in the directory.")
@@ -177,15 +210,17 @@ def process_directory(tracker, directory, ret=False):
 
         # Call the video processing function
         if ret:
-            data, time = process_video(tracker, video_path, output_csv_path, ret)
+            data, time, q_factor = process_video(tracker, video_path, output_csv_path, ret)
             trials.append(data)
             length.append(time)
+            q_facotrs.append(q_factor)
         else:
             process_video(tracker, video_path, output_csv_path)
 
     if ret:
         times, means, uncertainties = binning(trials, max_time=max(length))
-        amplitude_decay(times, means, uncertainties)
+        average_q = sum(q_facotrs) / len(q_facotrs) if len(q_facotrs) >= 0 else 0
+        amplitude_decay(times, means, uncertainties, average_q)
 
     print(f"Processed {len(video_files)} video files in directory: {directory}")
 
@@ -206,6 +241,13 @@ if __name__ == "__main__":
         help='Source directory path as string.'
     )
 
+    parser.add_argument(
+        '--multi_trial',
+        type=str,
+        default="False",
+        help='Run mutiple trials to get mean and error'
+    )
+
     args = parser.parse_args()
 
     if not os.path.isdir(args.source):
@@ -222,9 +264,10 @@ if __name__ == "__main__":
     }
 
     tracker = trackers[args.tracker]()
+    ret = True if args.multi_trial == "True" else False
 
     print(f"Using tracker: {args.tracker}")
     print(f"Operating on source directory: {args.source}")
 
     # CURRENTLY we manually set return as true or false!
-    process_directory(tracker, args.source, ret=True)
+    process_directory(tracker, args.source, ret)
