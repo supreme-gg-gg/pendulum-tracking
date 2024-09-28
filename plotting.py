@@ -49,6 +49,9 @@ def plot_angle(df, output_path="angle_graph.png"):
 def fit_amplitude(df, output_path="amplitude_decay.png"):
 
     angles = df["Angle(deg)"]
+
+    angles = angles.apply(lambda x: math.radians(x))
+
     times = df["Time(s)"]
 
     peaks, _ = find_peaks(angles)
@@ -56,6 +59,7 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     peak_amplitudes = angles[peaks]
 
     error = 0.5 * np.ones_like(peak_times)
+    error = np.radians(error)
     xerr = 0.5 * np.ones_like(peak_times)
 
     # Fit the peak heights to an exponential function A * exp(-gamma * t)
@@ -78,7 +82,7 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     average_period = calculate_periods(peaks, times)
     q_factor = math.pi * tau / average_period
 
-    plt.figure(figsize=(10, 7))  # Decrease figure height for shorter plots
+    plt.figure(figsize=(10, 6))  # Decrease figure height for shorter plots
 
     plt.subplot(2, 1, 1)
     plt.plot(times, angles, label='Damped Oscillator', color='blue')
@@ -87,7 +91,7 @@ def fit_amplitude(df, output_path="amplitude_decay.png"):
     plt.suptitle(f"Tau: {tau:.3f} seconds, T: {average_period:.3f}, Q factor: {q_factor:.3f}")
     plt.title("Amplitude vs Time")
     plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude (degrees)")
+    plt.ylabel("Amplitude (radians)")
     plt.grid(True)
     plt.legend()
 
