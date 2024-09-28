@@ -1,4 +1,4 @@
-# PHY180 -- Pendulum Motion Tracker
+# Automated Tracking & Analysis For Pendulum Motion
 
 This project utilizes OpenCV's Trackers API to develop an automated tracking system for processing recorded videos of pendulum motion. You should put all the video you wish to process in one directory and the program will automatically process all the files.
 
@@ -6,8 +6,33 @@ This project utilizes OpenCV's Trackers API to develop an automated tracking sys
 
 ![Sample graph](angle-time.png)
 ![Sample for curve fitting](amplitude_decay.png)
+![Sample for amplitude decay](decay_fit.png)
 
 > The code is open source and feel free to fork and use it for your project. However, you must credit the creator if the code was used as a part of any academic assignment.
+
+## Table of Contents
+
+- [Input Requirements](#input-requirements)
+- [Contact Me](#contact-me)
+- [Requirements](#requirements)
+- [Usage](#usage)
+  - [Main Tracker](#main-tracker)
+  - [Supported Graphs](#supported-graphs)
+  - [Multiple Trials](#multiple-trials)
+  - [Live Tracking](#live-tracking)
+- [Known Issues](#known-issues)
+  - [OpenCV Version](#opencv-version)
+  - [Tracking Instability](#tracking-instability)
+  - [Inaccurate Period](#inaccurate-period)
+  - [Difficulty in Picking Origin](#difficulty-in-picking-origin)
+  - [Too few oscillations](#too-few-oscillations)
+- [Citation](#citation)
+
+## Background
+
+Often physics projects require low-budget and efficient solutions. This is a great example. In short -- simple code, great performane, and best of all: **intuitive usage**. Online autotrackers are either unreliable or difficult to use. UX was obviously not a concern to those developers. Otherwise, these alternatives are packed with unnecessary features that only create confusion. The story is different here, as we embrace simplicity while getting the job done -- and doing it well.
+
+[Get started with the all-in-one beginner-friendly solution to tracking.](#requirements)
 
 ## Input Requirements
 
@@ -19,9 +44,7 @@ The program works best with videos recorded at _**60fps**_. Most modern smartpho
 
 If you wish to contribute or have questions, reach out to [my email](mailto:jetjiang.ez@gmail.com). The project might not be actively maintained over the year but I am happy to help if possible.
 
-## Usage
-
-### Requirements
+## Requirements
 
 OpenCV is open source computer vision library written in C++, but provides support for other languages such as Python via its API. You need to install the package from PyPI or Anaconda in order to run this script.
 
@@ -36,6 +59,8 @@ conda install opencv
 pip install -r requirements.txt
 conda env create -f environment.yaml
 ```
+
+## Usage
 
 ### Main Tracker
 
@@ -61,6 +86,16 @@ The user will be prompted to:
 
 **If you wish to output a different type of graph supported in the list below, feel free to modify part of the program. However, you are discouraged to do it unless you are completely sure what you are doing.**
 
+### Multiple Trials
+
+It is common in experiments to conduct multiple trials on the same initial conditions in order to assess type A uncertainty, or **random error**. To facilitate this, you can set the corresponding command line argument `--multiple-trials True`. By doing so:
+
+- The function will repeated run over all files in the directory and generate individual graphs
+
+- Also store the amplitude-time data from each file and perform binning to aggregate data
+
+- Calculate the mean and uncertainty of trials combined and generate a plot with curve fitting and errors
+
 ### Supported Graphs
 
 The following graphs are supported by the graph as per the current release:
@@ -69,7 +104,7 @@ The following graphs are supported by the graph as per the current release:
 
 2. Amplitude vs. time graph with exponential function fit and Q value computed
 
-3. _More coming!_
+3. Exponential decay of amplitude with random error uncertainty and mean using multiple trials
 
 Calling main tracker script will automatically generate one or more plots in the output directory. If you want to plot a specific CSV file, you can do that with:
 
@@ -77,7 +112,17 @@ Calling main tracker script will automatically generate one or more plots in the
 python3 plotting.py --path <your-csv-path>
 ```
 
-> Since this feature is still being worked on, expect enhancements in future patches.
+> By default, we run `fit_amplitude()` since it generates most comprehensive results. However, if you specifically want to use other functions please edit the main driver of the file prior to running it.
+
+### Live Tracking
+
+The live tracking functionality is built on top of two methods implemented using OpenCV:
+
+1. Tracking (`tracker.py`): This is a standalone tracking module that was originally developed using a series of OpenCV Python API trackers. See [the section above](#main-tracker) for more information.
+
+2. Real-time object detection (`detection.py`): A new script intending to improve usability and extend support to live tracking (i.e. using camera instead of pre-recorded video).
+
+**OD is required because before we call the tracking module we need to know where is the initial position of the object.** Fine tuning OD models like YOLO, despite considerably better performance, would be time-consuming and therefore we incline towards simpler efficient (yet less accurate) algorithms such as colour tracking. Once we obtained the initial bounding box (ROI) of the object and the use selected `Enter`, we will automatically call the tracker module to do its regular job.
 
 ## Known Issues
 
@@ -95,7 +140,7 @@ AttributeError: module 'cv2' has no attribute 'TrackerTLD'
 
 ### Tracking Instability
 
-In the case of failing to track recurrently, consider using a different tracker than the default `KCF`. You can research the different features of each tracker but trial and error should lead to the solution for most use cases.
+In the case of failing to track recurrently, consider using a different tracker than the default `KCF` such as `CSRT`. The occurence depends mainly on your video source. You can research the different features of each tracker but trial and error should lead to the solution for most use cases.
 
 > Raise a GitHub Issue if severity is high. The issue is being investigated.
 
@@ -103,10 +148,39 @@ In the case of failing to track recurrently, consider using a different tracker 
 
 In **RARE** testing scenarios the average period calculated is incorrect. _The issue is currently being investigated and will hopefully be addressed in a future patch._ Please double-check the reasonableness of the output since the program CAN make mistakes!
 
-## TODO
+### Difficulty in Picking Origin
 
-1. In future editions, we have plan to implement automatic object identification either through object detection OR inferencing from manual selection only for the first video.
+We expect a better GUI assitance for picking origin (including x and y axis) in the future. For now, estimate the origin and use a mouse to select the point. _Technically, this does not result in any implications in the result analysis_ since transformation of a function will not change its maximum and minimum, and in most cases we are only concerned with **periods** instead of specific angles.
 
-2. Process the dataframe: remove inconsistency on both ends and filter / double-check the period for anomalies.
+### Too few oscillations
 
-3. Plotting error bars!!!! and fitting exponential decay functions!!!
+In the case of the error message below, it is likely that you stopped the video too early such that the script has not collected enough data points for curve fitting. The two solutions is either to avoid using `fit_amplitude()` or let the script run longer.
+
+```
+File "/Users/xxx/xxx/xxx/opencv-tracking/plotting.py", line 162, in fit_amplitude
+  popt, _ = curve_fit(exponential_decay, peak_times, peak_amplitudes)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/Users/xxx/xxx/envs/opencv/lib/python3.12/site-packages/scipy/optimize/_minpack_py.py", line 1000, in curve_fit
+  res = leastsq(func, p0, Dfun=jac, full_output=1, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/Users/xxx/xxx/envs/opencv/lib/python3.12/site-packages/scipy/optimize/_minpack_py.py", line 424, in leastsq
+  raise TypeError(f"Improper input: func input vector length N={n} must"
+TypeError: Improper input: func input vector length N=2 must not exceed func output vector length M=1
+```
+
+## Citation
+
+If you use this code for any academic purposes, please cite it as follows:
+
+```
+@misc{chiang2024opencvtracking,
+  author = {Jet Chiang},
+  title = {Automated Tracking And Analysis System for Pendulum Motion},
+  year = {2024},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/supreme-gg-gg/opencv-tracking}},
+}
+```
+
+Plagarising any part of the code without consent from the publisher is a serious academic offense.
