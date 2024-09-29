@@ -2,6 +2,17 @@ import cv2
 import numpy as np
 
 def detect_by_color(frame, lower_color, upper_color):
+    """
+    Detects objects in a frame based on a specified color range and draws a bounding box around the largest detected object.
+    Args:
+        frame (numpy.ndarray): The input image frame in BGR color space.
+        lower_color (tuple): The lower bound of the color range in HSV color space.
+        upper_color (tuple): The upper bound of the color range in HSV color space.
+    Returns:
+        tuple: A tuple containing the bounding box coordinates (x1, y1, x2, y2) of the largest detected object and the modified frame with the bounding box drawn. 
+               If no object is detected, returns (None, frame).
+    """
+
     # Convert the frame to HSV color space
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
@@ -49,11 +60,19 @@ def detect_circle(frame):
 
 
 def detect_object(video=0):
-
-    '''
-    Call this function from the main trakcer module. 
-    It allows the user to select the initial bounding box live.
-    '''
+    """
+    Detects an object in a video stream or video file based on color.
+    This function captures video from a specified source (default is the webcam) 
+    and allows the user to select the initial bounding box live. It detects an 
+    object based on predefined color bounds in the HSV color space and displays 
+    the video with the detected bounding box.
+    Args:
+        video (int or str): The video source. Default is 0 (webcam). Can also be 
+                            a file path to a video.
+    Returns:
+        tuple: The region of interest (ROI) where the object is detected, or None 
+               if no object is detected.
+    """
 
     # Open the video capture (0 for default webcam, or provide video file path)
     cap = cv2.VideoCapture(video)

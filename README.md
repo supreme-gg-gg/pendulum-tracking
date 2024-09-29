@@ -2,7 +2,7 @@
 
 This project utilizes OpenCV's Trackers API to develop an automated tracking system for processing recorded videos of pendulum motion. You should put all the video you wish to process in one directory and the program will automatically process all the files.
 
-> The code is open source and feel free to fork and use it for your project. However, you must credit the creator if the code was used as a part of any academic assignment. Consider giving me a star for the repo too xd
+> The code is open source and feel free to fork and use it for your project. However, you must credit the creator if the code was used as a part of any academic assignment. Consider giving me a star for the repo too XD
 
 **An angle-time graph will be produced with average period, while logging X, Y, and angle to a csv file. For an entire list of supported graphs, please see [the graphs section](#supported-graphs)** For each video there will be one csv file and one or more graph in the `ouput/` directory.
 
@@ -69,12 +69,12 @@ conda env create -f environment.yaml
 The following script will process all the files in the specified directory:
 
 ```
-python3 tracker.py --tracker <tracker_type> --source <path-to-videos> --show <True/False>
+python3 tracker.py --tracker <tracker_type> --source <path-to-videos> --multi-trials <True/False>
 ```
 
 The tracker is defaulted to `KCF` (Kernalized Correlation Filter). All available options for OpenCV 4.0+ are: `tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']`.
 
-> If you don't wish to show the video being tracked, set `--show` to `False`. WARNING: You might run into unexpected errors...
+> By default we assume you want to run each video file independently. If you want to consider them as different samples, you should set `--multi-trials True` or using the flag `-m True`. For details, see [the subsequent section](#multiple-trials)
 
 The user will be prompted to:
 
@@ -100,7 +100,7 @@ It is common in experiments to conduct multiple trials on the same initial condi
 
 ### Supported Graphs
 
-The following graphs are supported by the graph as per the current release:
+The following graphs or outputs are supported by the graph as per the current release:
 
 1. Regular angle vs. time graph with period computed
 
@@ -125,6 +125,12 @@ The live tracking functionality is built on top of two methods implemented using
 2. Real-time object detection (`detection.py`): A new script intending to improve usability and extend support to live tracking (i.e. using camera instead of pre-recorded video).
 
 **OD is required because before we call the tracking module we need to know where is the initial position of the object.** Fine tuning OD models like YOLO, despite considerably better performance, would be time-consuming and therefore we incline towards simpler efficient (yet less accurate) algorithms such as colour tracking. Once we obtained the initial bounding box (ROI) of the object and the use selected `Enter`, we will automatically call the tracker module to do its regular job.
+
+### Finding Q factor
+
+Please google / ChatGPT if you don't know what is the Q factor for a pendulum motion, as we shall not spend time to discuss it here. The graphing module supports calculating Q factor automatically using the exponential decay model. **We calculate it both ways using tau and counting oscillations.** For the latter, we find where $\theta = \theta_0 \exp{-\pi/4}$ to estimate $\frac{Q}4$. This helps reduce time duration of the recording but feel free to increase it as needed. The results are displayed on a text box in the upper right corner of the second (residual) graph.
+
+> WARNING: If your video is too short, the function will not raise an error but Q factor will be dispalyed as -1.
 
 ## Known Issues
 

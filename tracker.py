@@ -71,7 +71,9 @@ def process_video(tracker, video_path, csv_path, ret=False):
     cv2.destroyAllWindows()
 
     # Initialize tracker with first frame and bounding box
-    ok = tracker.init(frame, bounding_box)
+    global trackers
+    cvtracker = trackers[tracker]()
+    ok = cvtracker.init(frame, bounding_box)
 
     position_log = []
     # start_time = time.time()
@@ -99,10 +101,12 @@ def process_video(tracker, video_path, csv_path, ret=False):
             break
             
         # Obtain frame per second (deprecated)
+        '''
         timer = cv2.getTickCount()
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+        '''
 
-        ok, bbox = tracker.update(frame)
+        ok, bbox = cvtracker.update(frame)
 
         # Calculate the real-life timestamp of this frame
         current_time = (current_frame / recorded_fps)
@@ -129,20 +133,22 @@ def process_video(tracker, video_path, csv_path, ret=False):
             if current_frame % 5 == 0:
                 position_log.append([round(current_time, 3), adj_x, adj_y, round(angle, 3)])
 
-            cv2.putText(frame, "Tracking failure detected", (100,140), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,255),2)
-        
             # Display information on screen
             cv2.putText(frame, f"Time: {current_time:.2f}, X: {adj_x:.2f}, Y:{adj_y:.2f}", (100,60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
-            cv2.putText(frame, f"Angle:{angle:.2f}", (100,100), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
-            
-            # Display result
-            cv2.namedWindow("Tracking", cv2.WINDOW_NORMAL)
-            cv2.resizeWindow("Tracking", min(frame_width, 800), min(frame_height, 600))  # Limit window size
-            cv2.imshow("Tracking", frame)
+            cv2.putText(frame, f"Angle:{angle:.2f}", (100,120), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (50,170,50),2)
 
-            # Exit if ESC pressed
-            k = cv2.waitKey(1) & 0xff
-            if k == 27 : break
+        else:
+
+            cv2.putText(frame, "Tracking failure detected", (100,90), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,255),2)
+        
+        # Display result
+        cv2.namedWindow("Tracking", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("Tracking", min(frame_width, 800), min(frame_height, 600))  # Limit window size
+        cv2.imshow("Tracking", frame)
+
+        # Exit if ESC pressed
+        k = cv2.waitKey(1) & 0xff
+        if k == 27 : break
 
         current_frame += 1
 
@@ -220,7 +226,7 @@ def process_directory(tracker, directory, ret=False):
     if ret:
         times, means, uncertainties = binning(trials, max_time=max(length))
         average_q = sum(q_facotrs) / len(q_facotrs) if len(q_facotrs) >= 0 else 0
-        amplitude_decay(times, means, uncertainties, average_q)
+        amplitude_decay(times, means, uncertainties, average_q, output_path=f"./output/decay_fit_{directory}.png")
 
     print(f"Processed {len(video_files)} video files in directory: {directory}")
 
@@ -242,10 +248,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        '--multi_trial',
+        '--multi-trials', '-m',
         type=str,
         default="False",
-        help='Run mutiple trials to get mean and error'
+        help='Run multiple trials to get mean and error'
     )
 
     args = parser.parse_args()
@@ -253,6 +259,7 @@ if __name__ == "__main__":
     if not os.path.isdir(args.source):
         raise NotADirectoryError(f"'{args.source}' is not a valid directory.")
 
+    global trackers
     trackers = {
         "CSRT": cv2.legacy.TrackerCSRT_create,
 		"KCF": cv2.legacy.TrackerKCF_create,
@@ -263,11 +270,10 @@ if __name__ == "__main__":
 		"MOSSE": cv2.legacy.TrackerMOSSE_create
     }
 
-    tracker = trackers[args.tracker]()
-    ret = True if args.multi_trial == "True" else False
+    ret = True if args.multi_trials == "True" else False
 
     print(f"Using tracker: {args.tracker}")
     print(f"Operating on source directory: {args.source}")
 
     # CURRENTLY we manually set return as true or false!
-    process_directory(tracker, args.source, ret)
+    process_directory(args.tracker, args.source, ret)

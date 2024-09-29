@@ -6,6 +6,7 @@ from scipy.optimize import curve_fit
 import argparse
 import math
 
+
 def binning(trials, max_time, bin_size=1):
     """
     Bins the amplitude data from multiple trials into specified time bins and calculates the mean and uncertainty of the mean for each bin.
@@ -70,6 +71,7 @@ def binning(trials, max_time, bin_size=1):
 
     return bin_centers, mean_amplitudes, uncertainty_mean
 
+
 def calculate_periods(peaks, times):
         """
         Calculate the average period between peaks in a time series.
@@ -91,6 +93,7 @@ def calculate_periods(peaks, times):
         except ZeroDivisionError:
             print("No period recorded, error plotting")
             return 0
+
 
 def plot_angle(df, output_path="angle_graph.png"):
     """
@@ -130,6 +133,44 @@ def plot_angle(df, output_path="angle_graph.png"):
     plt.grid(True)
     plt.savefig(f"output/{output_path}", format="png")
     plt.show()
+
+
+def q_factor_counting(peak_times, peak_amplitudes, period):
+    """
+    Calculate the Q factor of a signal based on its peak times and amplitudes.
+    Parameters:
+        peak_times (pd.Series): Series of peak times.
+        peak_amplitudes (pd.Series): Series of peak amplitudes.
+        period (float): Period of the signal.
+    Returns:
+        float: The calculated Q factor.
+    """
+
+    # Calculate the threshold amplitude (e^(-π/4) of the initial peak amplitude)
+    max_amplitude = peak_amplitudes.iloc[0]
+    decay_threshold = max_amplitude * np.exp(-np.pi / 8)
+
+    # Find the time where the amplitude falls below the decay threshold
+    decay_time = None
+    for i, amplitude in enumerate(peak_amplitudes):
+        if amplitude <= decay_threshold:
+            decay_time = peak_times.iloc[i]
+            break
+
+    if decay_time is None:
+        print("WARNING: Amplitude never decays to the required threshold.")
+        return -1
+
+    # Calculate the time difference from the initial peak
+    initial_time = peak_times.iloc[0]
+    decay_duration = decay_time - initial_time
+
+    # Find Q/8 and calculate Q
+    q_div_8 = math.pi * decay_duration / period
+    q_factor = q_div_8 * 8
+
+    return q_factor
+
 
 def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png"):
     """
@@ -177,58 +218,75 @@ def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png"):
     
     residual = peak_amplitudes - fitted_peak_heights
 
-    # Find tau & Q factor
-    tau = 1 / fitted_gamma # Calculations see README.md
+    # Find tau & Q factor using Method 1 (tau)
+    tau = 1 / fitted_gamma
     average_period = calculate_periods(peaks, times)
     q_factor = math.pi * tau / average_period
 
-    plt.figure(figsize=(10, 6))  # Decrease figure height for shorter plots
+    # Find q-factor using method two (counting)
+    q_factor_2 = q_factor_counting(peak_times, peak_amplitudes, average_period)
 
-    plt.subplot(2, 1, 1)
-    plt.plot(times, angles, label='Damped Oscillator', color='blue')
-    plt.errorbar(peak_times, peak_amplitudes, fmt='ro', yerr=error, label='Peaks')
-    plt.plot(peak_times, fitted_peak_heights, 'g--', label=f'Fitted: {fitted_A:.3f}*exp(-{fitted_gamma:.3f}*t)')
-    plt.suptitle(f"Tau: {tau:.3f} seconds, T: {average_period:.3f}, Q factor: {q_factor:.3f}")
-    plt.title("Amplitude vs Time")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude (radians)")
-    plt.grid(True)
-    plt.legend()
+    # Create a figure and two subplots for the top and bottom graphs
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6))
 
-    plt.subplot(2, 1, 2)
-    # Plot the residuals
-    plt.errorbar(peak_times, residual, yerr=error, fmt='o', label='Residuals')
-    plt.axhline(0, color='gray', linestyle='--')
-    plt.xlabel('Time')
-    plt.ylabel('Residuals')
-    plt.title('Residuals of the Exponential Fit')
-    plt.legend()
+    # Plot the first graph: Amplitude vs Time
+    ax1.plot(times, angles, label='Damped Oscillator', color='blue')
+    ax1.errorbar(peak_times, peak_amplitudes, fmt='ro', yerr=error, label='Peaks')
+    ax1.plot(peak_times, fitted_peak_heights, 'g--', label=f'Fitted: {fitted_A:.3f}*exp(-{fitted_gamma:.3f}*t)')
 
-    plt.tight_layout(pad=2.0)  # Add padding between plots
+    # Set labels, title, and grid for the first plot
+    ax1.set_title("Amplitude vs Time")
+    ax1.set_xlabel("Time (s)")
+    ax1.set_ylabel("Amplitude (radians)")
+    ax1.grid(True)
+    ax1.legend()
+
+    # Plot the second graph: Residuals
+    ax2.errorbar(peak_times, residual, yerr=error, fmt='o', label='Residuals')
+    ax2.axhline(0, color='gray', linestyle='--')
+
+    # Set labels, title, and grid for the second plot
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel('Residuals')
+    ax2.set_title('Residuals of the Exponential Fit')
+    ax2.grid(True)
+    ax2.legend()
+
+    # Add a text box in the upper-right corner to display Q factor, Tau, and Period
+    textstr = (f'Q Factor (Tau): {q_factor:.2f}\n'
+            f'Q Factor (Counting): {q_factor_2:.2f}\n'
+            f'Tau: {tau:.2f} s\n'
+            f'Period: {average_period:.2f} s')
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    ax2.text(0.95, 0.95, textstr, transform=ax2.transAxes, fontsize=12,
+            verticalalignment='top', horizontalalignment='right', bbox=props)
+
+    plt.tight_layout(pad=2.0)
     plt.savefig(f"{output_path}", format="png")
     plt.show()
 
     if ret:
         return list(zip(peak_times, peak_amplitudes)), q_factor
     
+
 def amplitude_decay(times, peaks, error, q_factor, output_path="decay_fit.png"):
     
     """
     Plots the amplitude decay of a signal over time and fits an exponential decay curve to the data.
     Parameters:
-    times (array-like): Array of time values.
-    peaks (array-like): Array of peak amplitude values corresponding to the time values.
-    error (array-like): Array of error values for the peak amplitudes.
-    output_path (str, optional): Path to save the output plot image. Default is "amplitude_decay_trials.png".
+        times (array-like): Array of time values.
+        peaks (array-like): Array of peak amplitude values corresponding to the time values.
+        error (array-like): Array of error values for the peak amplitudes.
+        output_path (str, optional): Path to save the output plot image. Default is "amplitude_decay_trials.png".
     Returns:
-    None
+        None
     The function performs the following steps:
-    1. Defines an exponential decay function.
-    2. Fits the exponential decay function to the provided peak data.
-    3. Calculates the residuals between the actual peaks and the fitted curve.
-    4. Plots the original peak data with error bars and the fitted exponential decay curve.
-    5. Plots the residuals of the fit.
-    6. Saves the plot to the specified output path and displays it.
+        1. Defines an exponential decay function.
+        2. Fits the exponential decay function to the provided peak data.
+        3. Calculates the residuals between the actual peaks and the fitted curve.
+        4. Plots the original peak data with error bars and the fitted exponential decay curve.
+        5. Plots the residuals of the fit.
+        6. Saves the plot to the specified output path and displays it.
     """
 
     def exponential_decay(t, A, gamma):
@@ -271,6 +329,7 @@ def amplitude_decay(times, peaks, error, q_factor, output_path="decay_fit.png"):
     plt.show() 
 
     print(f"Amplitude decay fit plot saved to {output_path}")
+
 
 if __name__ == "__main__":
     
