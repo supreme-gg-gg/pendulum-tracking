@@ -131,7 +131,7 @@ def plot_angle(df, output_path="angle_graph.png"):
     plt.xlabel("Time (s)")
     plt.ylabel("Angle (degrees)")
     plt.grid(True)
-    plt.savefig(f"output/{output_path}", format="png")
+    plt.savefig(f"{output_path}", format="png")
     plt.show()
 
 
@@ -165,11 +165,10 @@ def q_factor_counting(peak_times, peak_amplitudes, period):
     initial_time = peak_times.iloc[0]
     decay_duration = decay_time - initial_time
 
-    # Find Q/8 and calculate Q
-    q_div_8 = math.pi * decay_duration / period
-    q_factor = q_div_8 * 8
+    # Find Q/8 and calculate Q 
+    q_factor = i * 8
 
-    return q_factor
+    return q_factor, decay_duration
 
 
 def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png"):
@@ -224,7 +223,8 @@ def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png"):
     q_factor = math.pi * tau / average_period
 
     # Find q-factor using method two (counting)
-    q_factor_2 = q_factor_counting(peak_times, peak_amplitudes, average_period)
+    q_factor_2, decay_duration = q_factor_counting(peak_times, peak_amplitudes, average_period)
+    print(f"Time taken to decay to e^(pi/4): {decay_duration}")
 
     # Create a figure and two subplots for the top and bottom graphs
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6))
@@ -262,7 +262,7 @@ def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png"):
             verticalalignment='top', horizontalalignment='right', bbox=props)
 
     plt.tight_layout(pad=2.0)
-    plt.savefig(f"output/{output_path}", format="png")
+    plt.savefig(f"{output_path}", format="png")
     plt.show()
 
     if ret:
@@ -348,9 +348,9 @@ if __name__ == "__main__":
         for i in csv_files:
             try:
                 df=pd.read_csv(i,header=0)
-                print(f"processing csv file:{i}")
+                print(f"processing csv file: {i}")
                 #functions to run on each csv file
-                fit_amplitude(df,output_path=f"{os.path.splitext(os.path.basename(i))[0]}_amplitude_decay.png")
-                plot_angle(df,output_path=f"{os.path.splitext(os.path.basename(i))[0]}_angle_graph.png")
+                fit_amplitude(df,output_path=f"output/{os.path.splitext(os.path.basename(i))[0]}_amplitude_decay.png")
+                plot_angle(df,output_path=f"output/{os.path.splitext(os.path.basename(i))[0]}_angle_graph.png")
             except Exception as e:
-                print(f"failed processing{i}:{e}")
+                print(f"failed processing {i}: {e}")
