@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 import argparse
-import math
+import math, os, glob
 
 
 def binning(trials, max_time, bin_size=1):
@@ -262,7 +262,7 @@ def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png"):
             verticalalignment='top', horizontalalignment='right', bbox=props)
 
     plt.tight_layout(pad=2.0)
-    plt.savefig(f"{output_path}", format="png")
+    plt.savefig(f"output/{output_path}", format="png")
     plt.show()
 
     if ret:
@@ -336,12 +336,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plot pendulum angle from CSV data.") 
     parser.add_argument("--csv_files_path", nargs="*",help="list of csv files to process.")
     parser.add_argument("--csv_files_directory", type=str, help=" directory containing al csv files containing data.")
+    args = parser.parse_args()
     csv_files=[]
     if args.csv_files_path:
-        csv_files.extend(args.csv_files)
+        csv_files.extend(args.csv_files_path)
     if args.csv_files_directory:
         csv_files.extend(glob.glob(os.path.join(args.csv_files_directory,"*.csv")))
-    if not csv_files_path:
+    if not csv_files:
         print("no csv files provided, please provide them")
     else:
         for i in csv_files:
@@ -349,7 +350,7 @@ if __name__ == "__main__":
                 df=pd.read_csv(i,header=0)
                 print(f"processing csv file:{i}")
                 #functions to run on each csv file
-                fit_amplitude(df,out_put=f"{os.path.splitext(i)[0]}_amplitude_decay.png")
-                plot_angle(df,output_path=f"{os.path.splitext(i)[0]}_angle_graph.png")
+                fit_amplitude(df,output_path=f"{os.path.splitext(os.path.basename(i))[0]}_amplitude_decay.png")
+                plot_angle(df,output_path=f"{os.path.splitext(os.path.basename(i))[0]}_angle_graph.png")
             except Exception as e:
-                print(f"failed processing{i}:{e})
+                print(f"failed processing{i}:{e}")

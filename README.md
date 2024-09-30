@@ -10,17 +10,15 @@ This project utilizes OpenCV's Trackers API to develop an automated tracking sys
 ![Sample for curve fitting](sample/amplitude_decay.png)
 ![Sample for amplitude decay](sample/decay_fit.png)
 
-> The code is open source and feel free to fork and use it for your project. However, you must credit the creator if the code was used as a part of any academic assignment.
-
 ## Table of Contents
 
 - [Input Requirements](#input-requirements)
-- [Contact Me](#contact-me)
+- [Contact Me and Contributions](#contact-me-and-contributions)
 - [Requirements](#requirements)
 - [Usage](#usage)
   - [Main Tracker](#main-tracker)
-  - [Supported Graphs](#supported-graphs)
   - [Multiple Trials](#multiple-trials)
+  - [Supported Graphs](#supported-graphs)
   - [Live Tracking](#live-tracking)
 - [Known Issues](#known-issues)
   - [OpenCV Version](#opencv-version)
@@ -42,9 +40,11 @@ The program works best with videos recorded at _**60fps**_. Most modern smartpho
 
 > NOTE: You can expect bug fixes in future patches. Please create a GitHub Issue if you run into difficulties.
 
-## Contact Me
+## Contact Me and Contributions
 
 If you wish to contribute or have questions, reach out to Jet Chiang at [my email](mailto:jetjiang.ez@gmail.com). The project might not be actively maintained over the year but I am happy to help if possible.
+
+We welcome any new contributions regardless of your skill level. This can be a great experience to practice python skills! However, before you create any PR with your commits **please test your code locally using video/csv sources**. This will make the code review process smoother!
 
 ## Requirements
 
@@ -108,13 +108,21 @@ The following graphs or outputs are supported by the graph as per the current re
 
 3. Exponential decay of amplitude with random error uncertainty and mean using multiple trials
 
-Calling main tracker script will automatically generate one or more plots in the output directory. If you want to plot a specific CSV file, you can do that with:
+Calling main tracker script will automatically generate one or more plots in the output directory, see [tracker intro](#multiple_trials). If you wish to plot from a csv direclty without analysing the video, the module is also offered as a standalone graphing tool:
 
 ```
-python3 plotting.py --path <your-csv-path>
+python3 plotting.py --csv_files_path <file-path> --csv_files_directory <dir-path>
 ```
 
-> By default, we run `fit_amplitude()` since it generates most comprehensive results. However, if you specifically want to use other functions please edit the main driver of the file prior to running it.
+Note the following:
+
+- You must provide either a single file or a directory of csv files for the program to loop over
+
+- Plots will be generated in `output/` as well, **so be very cautious of the possibility of overwriting files!**
+
+- The folder you provided **MUST NOT** contain anything other than csv files. Therefore, we do not recommend providing the `output/` directory as a source but rather you should move all csv you want to plot into a separate directory
+
+> By default, we invoke both `plot_angle()` and `fit_amplitude()` when the plotting module is called directly. Feel free to locally modify the plotting script if you only wish to see one type of graph.
 
 ### Live Tracking
 
