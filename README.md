@@ -156,13 +156,15 @@ AttributeError: module 'cv2' has no attribute 'TrackerTLD'
 
 ### Tracking Instability
 
-In the case of failing to track recurrently, consider using a different tracker than the default `KCF` such as `CSRT`. The occurence depends mainly on your video source. You can research the different features of each tracker but trial and error should lead to the solution for most use cases.
+In theory, the tracker will perform well even without a uniform background colour and with medium to high environemntal distraction and chaos. However, the most common form of tracking failure is losing the object during the first 10 seconds. Should this occur, the following countermeasures are recommended:
+
+* Rerun the script with a different tracker, in most caes `CSRT` work well
+
+* Skip that video and rerun the entire script again on that video itself, this usually solves all issues
+
+* Select a tigter bounding box that only includes the box (i.e. does not include any part of your hand)
 
 > Raise a GitHub Issue if severity is high. The issue is being investigated.
-
-### Inaccurate Period
-
-In **RARE** testing scenarios the average period calculated is incorrect. _The issue is currently being investigated and will hopefully be addressed in a future patch._ Please double-check the reasonableness of the output since the program CAN make mistakes!
 
 ### Difficulty in Picking Origin
 
