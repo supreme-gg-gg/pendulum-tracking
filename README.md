@@ -7,8 +7,8 @@ This project utilizes OpenCV's Trackers API to develop an automated tracking sys
 **An angle-time graph will be produced with average period, while logging X, Y, and angle to a csv file. For an entire list of supported graphs, please see [the graphs section](#supported-graphs)** For each video there will be one csv file and one or more graph in the `ouput/` directory.
 
 ![Sample graph](sample/angle-time.png)
-![Sample for curve fitting](sample/amplitude_decay.png)
-![Sample for amplitude decay](sample/decay_fit.png)
+
+![Sample for amplitude decay](sample/amplitude_2.png)
 
 ## Table of Contents
 
