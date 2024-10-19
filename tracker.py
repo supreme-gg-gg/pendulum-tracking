@@ -109,7 +109,7 @@ def process_video(tracker, video_path, csv_path, ret=False):
         ok, bbox = cvtracker.update(frame)
 
         # Calculate the real-life timestamp of this frame
-        current_time = (current_frame / recorded_fps)
+        current_time = (current_frame /recorded_fps)
         
         if ok:
 

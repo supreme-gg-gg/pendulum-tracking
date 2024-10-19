@@ -225,8 +225,8 @@ def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png", fi
         q_factor = math.pi * tau / average_period
 
         # Find q-factor using method two (counting)
-        q_factor_2, decay_duration = q_factor_counting(peak_times, peak_amplitudes, average_period)
-        print(f"Time taken to decay to e^(pi/4): {decay_duration}")
+        # q_factor_2, decay_duration = q_factor_counting(peak_times, peak_amplitudes, average_period)
+        # print(f"Time taken to decay to e^(pi/4): {decay_duration}")
    
     elif fit_type == 'l':
         def linear(t, m, b):
@@ -275,7 +275,7 @@ def fit_amplitude(df, ret=False, err=None, output_path="amplitude_decay.png", fi
 
     # Add a text box in the upper-right corner to display Q factor, Tau, and Period
     textstr = (f'Q Factor (Tau): {q_factor:.2f}\n'
-            f'Q Factor (Counting): {q_factor_2:.2f}\n'
+            # f'Q Factor (Counting): {q_factor_2:.2f}\n'
             f'Tau: {tau:.2f} s\n'
             f'Period: {average_period:.2f} s')
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
