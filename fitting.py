@@ -5,6 +5,8 @@ import pandas as pd
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 
+plt.style.use('seaborn-v0_8-paper')
+
 # Define the functions
 def linear(x, a, b):
     return a * x + b
@@ -14,6 +16,9 @@ def quadratic(x, a, b, c):
 
 def power_func(x, a, b):
     return a * x**b
+
+def exponential_decay(x, a, b):
+    return a * np.exp(-b * x)
 
 # Ask user to upload a CSV file
 Tk().withdraw()  # Close the root window from tkinter
@@ -41,6 +46,7 @@ print("Choose the function to fit:")
 print("1. Linear")
 print("2. Quadratic")
 print("3. Power")
+print("4. Exponential")
 choice = input("Enter the number of your choice: ")
 
 # Select the appropriate function
@@ -56,6 +62,10 @@ elif choice == '3':
     func = power_func
     p0 = [1, 1]  # Initial guess for power function parameters
     func_name = "Power"
+elif choice == '4':
+    func = exponential_decay
+    p0 = [1, 1]
+    func_name = "Exponential Decay"
 else:
     print("Invalid choice")
     exit()
@@ -77,16 +87,24 @@ elif func_name == "Quadratic":
     print(f"Uncertainty in a (x^2 term): {perr[0]:.3f}")
     print(f"Uncertainty in b (x term): {perr[1]:.3f}")
     print(f"Uncertainty in c (constant): {perr[2]:.3f}")
+elif func_name == "Exponential Decay":
+    print(f"Fitted equation: y = {popt[0]:.3f} * exp(-{popt[1]:.3f} * x)")
+    print(f"Uncertainty in a: {perr[0]:.3f}")
+    print(f"Uncertainty in b: {perr[1]:.3f}")
 elif func_name == "Power":
     print(f"Fitted equation: y = {popt[0]:.3f}x^{popt[1]:.3f}")
     print(f"Uncertainty in a: {perr[0]:.3f}")
     print(f"Uncertainty in b: {perr[1]:.3f}")
 
 # Plot the data with error bars and the fit
+# Generate a smooth curve for the fit
+x_fit = np.linspace(min(x_data), max(x_data), 500)
+y_fit = func(x_fit, *popt)
 plt.errorbar(x_data, y_data, yerr=y_err, fmt='o', label="Data", color='red', ecolor='black', capsize=5)
-plt.plot(x_data, func(x_data, *popt), label=f"{func_name} fit", color='blue')
-plt.xlabel(x_label)
-plt.ylabel(y_label)
-plt.title(f"{func_name} Fit")
-plt.legend()
+plt.plot(x_fit, y_fit, label=f"{func_name} fit", color='blue')
+plt.xlabel(x_label, fontsize=14)
+plt.ylabel(y_label, fontsize=14)
+plt.title(f"{func_name} Fit", fontsize=16)
+plt.legend(fontsize=12)
+plt.grid(True)  # Add gridlines
 plt.show()
