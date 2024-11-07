@@ -101,6 +101,8 @@ elif func_name == "Power":
 x_fit = np.linspace(min(x_data), max(x_data), 500)
 y_fit = func(x_fit, *popt)
 plt.errorbar(x_data, y_data, yerr=y_err, fmt='o', label="Data", color='red', ecolor='black', capsize=5)
+# plt.yscale("log")
+# plt.xscale("log")
 plt.plot(x_fit, y_fit, label=f"{func_name} fit", color='blue')
 plt.xlabel(x_label, fontsize=14)
 plt.ylabel(y_label, fontsize=14)
