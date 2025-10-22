@@ -1,5 +1,8 @@
 # Automated Tracking & Analysis For Pendulum Motion
 
+> [!CAUTION] 
+> Note that this project is no longer maintained. If you found any issue / want new features, feel free to submit a PR and tag me, or just fork it for your own use.
+
 This project utilizes OpenCV's Trackers API to develop an automated tracking system for processing recorded videos of pendulum motion. You should put all the video you wish to process in one directory and the program will automatically process all the files.
 
 > The code is open source and feel free to fork and use it for your project. However, you must credit the creator if the code was used as a part of any academic assignment. Consider giving me a star for the repo too XD
